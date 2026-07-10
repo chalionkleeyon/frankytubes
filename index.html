@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Franky Tubes</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bungee+Shade&display=swap');
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: #000;
+  font-family: 'Bungee Shade', cursive;
+}
+
+canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+
+.content {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  padding: 2rem;
+}
+
+h1 {
+  font-size: clamp(3rem, 10vw, 8rem);
+  background: linear-gradient(45deg, #ff00ff, #00ffff, #ff00ff, #ffff00, #00ff00);
+  background-size: 400% 400%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradient-shift 3s ease infinite, wobble 2s ease-in-out infinite;
+  text-shadow: none;
+  filter: drop-shadow(0 0 20px rgba(255,0,255,0.5));
+}
+
+.subtitle {
+  font-family: monospace;
+  color: #0f0;
+  font-size: 1rem;
+  margin-top: 1rem;
+  opacity: 0.8;
+  animation: flicker 4s infinite;
+}
+
+.json-display {
+  margin-top: 2rem;
+  background: rgba(0,0,0,0.6);
+  border: 2px solid;
+  border-image: linear-gradient(45deg, #ff00ff, #00ffff, #ffff00) 1;
+  padding: 1.5rem;
+  border-radius: 0;
+  max-width: 500px;
+  text-align: left;
+  font-family: monospace;
+  font-size: 0.8rem;
+  color: #0ff;
+  animation: border-pulse 2s infinite;
+  overflow-x: auto;
+}
+
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes wobble {
+  0%, 100% { transform: rotate(-1deg) scale(1); }
+  25% { transform: rotate(1deg) scale(1.02); }
+  50% { transform: rotate(-0.5deg) scale(0.98); }
+  75% { transform: rotate(1.5deg) scale(1.01); }
+}
+
+@keyframes flicker {
+  0%, 95%, 100% { opacity: 0.8; }
+  96% { opacity: 0.2; }
+  97% { opacity: 0.9; }
+  98% { opacity: 0.3; }
+}
+
+@keyframes border-pulse {
+  0%, 100% { border-image: linear-gradient(45deg, #ff00ff, #00ffff, #ffff00) 1; }
+  33% { border-image: linear-gradient(45deg, #00ffff, #ffff00, #ff00ff) 1; }
+  66% { border-image: linear-gradient(45deg, #ffff00, #ff00ff, #00ffff) 1; }
+}
+</style>
+</head>
+<body>
+<canvas id="bg"></canvas>
+<div class="content">
+  <h1>FRANKY TUBES</h1>
+  <p class="subtitle">// cloud integration proof of concept //</p>
+  <div class="json-display" id="json-output"></div>
+</div>
+<script>
+// Psychedelic warp background
+const canvas = document.getElementById('bg');
+const ctx = canvas.getContext('2d');
+let time = 0;
+
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+function draw() {
+  time += 0.015;
+  const w = canvas.width;
+  const h = canvas.height;
+  
+  ctx.fillStyle = 'rgba(0,0,0,0.05)';
+  ctx.fillRect(0, 0, w, h);
+  
+  for (let i = 0; i < 12; i++) {
+    const hue = (time * 50 + i * 30) % 360;
+    const x = w/2 + Math.cos(time + i * 0.5) * (w * 0.3);
+    const y = h/2 + Math.sin(time * 0.7 + i * 0.8) * (h * 0.3);
+    const radius = 50 + Math.sin(time * 2 + i) * 30;
+    
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.strokeStyle = `hsla(${hue}, 100%, 60%, 0.6)`;
+    ctx.lineWidth = 2 + Math.sin(time + i) * 2;
+    ctx.stroke();
+    
+    // Warping tubes
+    ctx.beginPath();
+    ctx.moveTo(w/2, h/2);
+    const cp1x = w/2 + Math.cos(time * 1.3 + i) * 200;
+    const cp1y = h/2 + Math.sin(time * 0.9 + i) * 200;
+    ctx.quadraticCurveTo(cp1x, cp1y, x, y);
+    ctx.strokeStyle = `hsla(${(hue + 180) % 360}, 100%, 50%, 0.3)`;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+  
+  // Central warp ring
+  for (let j = 0; j < 6; j++) {
+    const r = 80 + j * 40 + Math.sin(time * 3 + j) * 20;
+    const hue = (time * 80 + j * 60) % 360;
+    ctx.beginPath();
+    for (let a = 0; a < Math.PI * 2; a += 0.1) {
+      const warp = Math.sin(a * 3 + time * 2) * 15;
+      const px = w/2 + Math.cos(a) * (r + warp);
+      const py = h/2 + Math.sin(a) * (r + warp);
+      if (a === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.strokeStyle = `hsla(${hue}, 100%, 60%, 0.4)`;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+  
+  requestAnimationFrame(draw);
+}
+draw();
+
+// Load and display JSON
+fetch('frankytubes.json')
+  .then(r => r.json())
+  .then(data => {
+    document.getElementById('json-output').textContent = JSON.stringify(data, null, 2);
+  });
+</script>
+</body>
+</html>
